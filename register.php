@@ -19,7 +19,7 @@ global $logger, $ecom_plugin;
 define('ECOMMERCE_FEEDER', '2012032901');
 
 //Only uncomment if you want to do debugging
-define('ECOMMFEEDER_DEBUG', 0);
+define('ECOMMFEEDER_DEBUG', 7);
 
 
 
@@ -53,9 +53,9 @@ if (is_admin()){
 		global $logger;
 		global $data_feed_page;
 		$logger->debug("Init arguments:".print_r($page_hooks,true).':'.print_r($base_page,true));
-		$data_feed_page =add_submenu_page('tools.php',__('eCommerce Feeder','wpsc'), __('eCommerce Feeder','wpsc'), 'manage_options', 'wpsc_module_data_feeder','display_wpe_data_feeder');	
+		$data_feed_page =add_submenu_page('tools.php',__('eCommerce Feeder','wpsc'), __('eCommerce Feeder','wpsc'), 'manage_options', 'wpsc_module_data_feeder','display_wpe_data_feeder');
 		$page_hooks[] =	$data_feed_page;
-		add_action('admin_init','wpsc_data_feeder_init');		
+		add_action('admin_init','wpsc_data_feeder_init');
 		return $page_hooks;
 	}
 	function ecommfeeder_ajax_job(){
@@ -110,7 +110,7 @@ function exportData(){
 	}
 }
 add_action('admin_menu', 'exportData');
-	
+
 function display_wpe_data_feeder(){
 	global $data_feed_page, $data, $tab, $logger, $scheduledJobs, $job, $task, $count;
 	//Trying out Smarty
@@ -157,7 +157,7 @@ function display_wpe_data_feeder(){
 					}
 					break;
 				default:
-					print "Test nothing";	
+					print "Test nothing";
 					return false;
 			}
 		}
@@ -168,7 +168,7 @@ function display_wpe_data_feeder(){
 		}
 		//Unless some previous business stopped us, lets display the page we're looking for
 		include('views/tab.menu.php');
-		
+
 		switch($tab){
 			case 'import':
 				//Get the list of already saved import jobs to show the user

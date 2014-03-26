@@ -2,37 +2,41 @@
 /**
  * users.class.php
  *
- * @author Analogrithems <Analogrithems@gmail.com>
+ * @author  Analogrithems <Analogrithems@gmail.com>
  * @version 0.1-Dev
  * @license http://www.analogrithems.com/rant/portfolio/project-licensing/
  */
 
-
 /**
  *
- * This is a class to work with the Wordpress users.  It gives an easy to use interface to import and export uer records 
+ * This is a class to work with the Wordpress users.  It gives an easy to use interface to import and export uer records
  *
  *
  *
- * @package Wordpress eCommerce Datafeeder
+ * @package    Wordpress eCommerce Datafeeder
  * @subpackage WPEC_Users
  */
-
-
-class WPEC_Users extends WPEC_ecommerce_feeder{
+class WPEC_Users extends WPEC_ecommerce_feeder {
 
 	var $users;
 	var $profiles;
-	
-	var $user_fields = array('user_login'=>'username', 'user_nicename'=>'nickname','user_email'=>'email', 
-				'user_registered'=>'registered_date', 'display_name'=>'display_name');
-	var $user_meta = array('last_name', 'first_name', 'nickname', 'aim', 'yim', 'description', 'jabber');
+
+	var $user_fields = array(
+		'user_login'      => 'username',
+		'user_nicename'   => 'nickname',
+		'user_email'      => 'email',
+		'user_registered' => 'registered_date',
+		'display_name'    => 'display_name'
+	);
+	var $user_meta = array( 'last_name', 'first_name', 'nickname', 'aim', 'yim', 'description', 'jabber' );
 	var $wpec_meta = array();
 	var $export_fields = array();
 
-	function __construct(){
-		$this->setCheckoutArray();
+	function __construct() {
+
 		parent::__construct();
+		$this->setCheckoutArray();
+
 	}
 
 	/**
@@ -41,157 +45,217 @@ class WPEC_Users extends WPEC_ecommerce_feeder{
 	 * Take an array of users and start updating them in the system
 	 *
 	 * @param mixed $users
+	 *
 	 * @return mixed $result statistics
 	 */
-	function updateUsers($users){
-                wp_reset_query();
-                global $wpdb;
-                set_time_limit(0);
+	function updateUsers( $users ) {
 
-                $r = 0;
-		$results = array('updated'=>0, 'added'=>0);
-                
-                foreach($users as $row){
-			$r++;
+		wp_reset_query();
+		global $wpdb;
+		set_time_limit( 0 );
+
+		$r       = 0;
+		$results = array( 'updated' => 0, 'added' => 0 );
+
+		foreach ( $users as $row ) {
+			$r ++;
+
 			//Scrub non-utf8 data
-			foreach($row as $key=>$val){
-				$row[$key] = iconv("UTF-8", "ISO-8859-1//IGNORE", $val);
+			foreach ( $row as $key => $val ) {
+				$row[ $key ] = iconv( "UTF-8", "ISO-8859-1//IGNORE", $val );
 			}
-			
-			if($this->isGood($row['username'])){
-				$username = $row['username'];
+
+			if ( $this->isGood( $row['username'] ) ) {
+				$username          = $row['username'];
 				$row['user_login'] = $row['username'];
-				unset($row['username']);
-			}elseif(!$this->isGood($row['username']) && $this->isGood($row['email']) ){
-				$username = $row['email'];
+				unset( $row['username'] );
+			} elseif ( ! $this->isGood( $row['username'] ) && $this->isGood( $row['email'] ) ) {
+				$username          = $row['email'];
 				$row['user_login'] = $row['email'];
-			}elseif($this->isGood($row['user_login'])){
+			} elseif ( $this->isGood( $row['user_login'] ) ) {
 				$username = $row['user_login'];
 			}
-			if($this->isGood($row['password'])){
-				$password = $row['password'];
+
+			if ( $this->isGood( $row['password'] ) ) {
+				$password         = $row['password'];
 				$row['user_pass'] = $password;
-				unset($row['password']);
-			}elseif($this->isGood($row['encrypted_password'])){
+				unset( $row['password'] );
+			} elseif ( $this->isGood( $row['encrypted_password'] ) ) {
 				$encrypted = $row['encrypted_password'];
-				unset($row['encrypted_password']);
-				$row['user_pass']=$encrypted;
+				unset( $row['encrypted_password'] );
+				$row['user_pass'] = $encrypted;
 			}
 
-			if($this->isGood($row['nickname'])){
+			if ( $this->isGood( $row['nickname'] ) ) {
 				$nickname = $row['nickname'];
 			}
 
-			if($this->isGood($row['display_name'])){
+			if ( $this->isGood( $row['display_name'] ) ) {
 				$displayName = $row['display_name'];
 			}
-				
-			if($this->isGood($row['email'])){
-				$email = $row['email'];
+
+			if ( $this->isGood( $row['email'] ) ) {
+				$email             = $row['email'];
 				$row['user_email'] = $row['email'];
-				unset($row['email']);
-			}elseif($this->isGood($row['user_email'])){
+				unset( $row['email'] );
+			} elseif ( $this->isGood( $row['user_email'] ) ) {
 				$email = $row['user_email'];
 			}
-			
-			foreach($row as $column=>$value){
-				if(preg_match('/^meta_/', $column) >0){
-					$user_meta[$column] = $value;
-				}else if(preg_match('/^billing_/i',$column) > 0){
-					$user_wpec[$column] = $value;
-				}else if(preg_match('/^shipping_/i',$column) > 0){
-					$user_wpec[$column] = $value;
-				}else{
-					$user[$column] = $value;
+
+			foreach ( $row as $column => $value ) {
+				if ( preg_match( '/^meta_/', $column ) > 0 ) {
+					$user_meta[ substr( $column, 5 ) ] = $value;
+					$user[ substr( $column, 5 ) ] = $value;
+				} else if ( preg_match( '/^billing/i', $column ) > 0 ) {
+					$user_wpec[ $column ] = $value;
+				} else if ( preg_match( '/^shipping/i', $column ) > 0 ) {
+					$user_wpec[ $column ] = $value;
+				} else if ( preg_match( '/^temp/i', $column ) > 0 ) {
+					$user_wpec[ $column ] = $value;
+				} else {
+					$user[ $column ] = $value;
 				}
 			}
-				
+
 			$user_id = username_exists( $username );
-			$this->logger->info("Looking up user: ".print_r($username,1).". Result=".print_r($user_id,1));
-			if ( !$user_id ) {
-				if(!$this->isGood($user['user_pass'])){
+			$this->logger->info( "Looking up user: " . print_r( $username,
+					1 ) . ". Result=" . print_r( $user_id, 1 ) );
+			if ( ! $user_id ) {
+				if ( ! $this->isGood( $user['user_pass'] ) ) {
 					$user['user_pass'] = wp_generate_password( 12, false );
 				}
 				$user_id = wp_insert_user( $user );
-				if(is_numeric($user_id)){
-					$results['added']++;
-					$_SESSION['status_msg'] .= __("Adding New User: ",'ecommerce_feeder').$username.' Email: '.$email;
-					$this->logger->info('Adding new user: '.$username.' Email: '.$email);
-				}else{
-					$_SESSION['error_msg'] .= __("Failed Adding New User: ",'ecommerce_feeder').print_r($user,1);
+				if ( is_numeric( $user_id ) ) {
+					$results['added'] ++;
+					$_SESSION['status_msg'] .= __( "Adding New User: ",
+							'ecommerce_feeder' ) . $username . ' Email: ' . $email;
+					$this->logger->info( 'Adding new user: ' . $username . ' Email: ' . $email );
+				} else {
+					$_SESSION['error_msg'] .= __( "Failed Adding New User: ",
+							'ecommerce_feeder' ) . print_r( $user, 1 );
 				}
-					
+
 			} else {
-				if(is_numeric($user_id)){
+				if ( is_numeric( $user_id ) ) {
 					$user['ID'] = $user_id;
-					if(wp_insert_user($user)){
-						$_SESSION['status_msg'] .= __("Updating User: ",'ecommerce_feeder').$username.' Email: '.$email;
-						$this->logger->info('Updating user: '.$username.' Email: '.$email);
-					}else{
-						$_SESSION['error_msg'] .= __("Failed Adding New User: ",'ecommerce_feeder').print_r($user,1);
-						$this->logger->warn('Failed to udpate user:'.$username.' with '.print_r($row,true));
+					if ( wp_insert_user( $user ) ) {
+						$_SESSION['status_msg'] .= __( "Updating User: ",
+								'ecommerce_feeder' ) . $username . ' Email: ' . $email;
+						$this->logger->info( 'Updating user: ' . $username . ' Email: ' . $email );
+					} else {
+						$_SESSION['error_msg'] .= __( "Failed Updating User: ",
+								'ecommerce_feeder' ) . print_r( $user, 1 );
+						$this->logger->warn( 'Failed to update user:' . $username . ' with ' . print_r( $row,
+								true ) );
 					}
-					$results['updated']++;
+					$results['updated'] ++;
 				}
-				
+
 			}
 
 			$update_wpec = false;
-			foreach($user_wpec as $field=>$value){
-				$field = substr($field,5);
-				if($wpec = array_search($field,$this->wpec_meta)){
-					$wpec_data[$wpec] = $value;
+			foreach ( $user_wpec as $field => $value ) {
+
+				$value = trim($value);
+
+				if ( $field == 'tempnonusstate' ) {
+					continue;
+				}
+
+				if ( array_key_exists( $field, $this->wpec_meta ) ) {
+
+					$field_id = $this->wpec_meta[ $field ]['id'];
+					if ( $this->wpec_meta[ $field ]['type'] == 'checkbox' && !empty( $value ) ) {
+
+						$wpec_data[ $field_id ] = array( 'Y' );
+
+					} elseif ( $this->wpec_meta[ $field ]['type'] == 'country' ) {
+
+						if ( array_key_exists( 'billingstate', $user_wpec ) ) {
+							$tmpstate = $user_wpec['billingstate'];
+						} elseif ( array_key_exists( 'tempnonusstate', $user_wpec ) ) {
+							$tmpstate = $user_wpec['tempnonusstate'];
+						} else {
+							$tmpstate = 'NJ';
+						}
+
+						$wpec_data[ $field_id ] = $this->getCountryData( $value, $tmpstate );
+
+						list( $meta_country, $meta_code ) = $wpec_data[ $field_id ];
+						$user_meta['_wpsc_shipping_country'] = $meta_country;
+						$user_meta['_wpsc_billing_country']  = $meta_country;
+						$user_meta['_wpsc_shipping_region']  = $meta_code;
+						$user_meta['_wpsc_billing_region']   = $meta_code;
+
+					} else {
+						$wpec_data[ $field_id ] = $value;
+					}
 					$update_wpec = true;
-				}else{
-					if($res = update_user_meta($user_id, $field, $value)){
-						$this->logger->warn("Failed to update user_id:".print_r($user_id,1)." meta:".print_r($field,1)."=".print_r($value,1)."\nFrom:".print_r($row,true).':Result was:'.print_r($res,1));
+				} else {
+					if ( $res = update_user_meta( $user_id, $field, $value ) ) {
+						$this->logger->warn( "Failed to update user_id:" . print_r( $user_id,
+								1 ) . " meta:" . print_r( $field, 1 ) . "=" . print_r( $value,
+								1 ) . "\nFrom:" . print_r( $row, true ) . ':Result was:' . print_r( $res,
+								1 ) );
 					}
 				}
 			}
-			if($this->isGood($encrypted)){
-				$this->setEncryptedPassword($user_id,$encrypted);
-				$this->logger->info("Setting previously encrypted password: {$username}={$encrypted}");
+
+			if ( $this->isGood( $encrypted ) ) {
+				$this->setEncryptedPassword( $user_id, $encrypted );
+				$this->logger->info( "Setting previously encrypted password: {$username}={$encrypted}" );
 			}
-			//TODO handle billing & shipping address
-						
-			if($update_wpec && isset($wpec_data) && !empty($wpec_data)) update_user_meta($user_id, 'wpshpcrt_usr_profile', $wpec_data);
+
+			if ( $update_wpec && isset( $wpec_data ) && ! empty( $wpec_data ) ) {
+				update_user_meta( $user_id, '_wpsc_checkout_details', $wpec_data );
+			}
+
+			// Update meta
+			foreach ( $user_meta as $meta_field => $meta_value ) {
+				update_user_meta( $user_id, $meta_field, $meta_value );
+			}
 
 		}
+
 		return $results;
 	}
 
-	function exportUsers(){
+	function exportUsers() {
 
-		$users = $this->getUsers();
+		$users  = $this->getUsers();
 		$exList = array();
-		$i=0;
-		foreach($users as $user){
-			foreach($this->user_fields as $k=>$v){
-				if($this->isGood($user['user'][$k])){
-					if(!isset($this->export_fields[$v])) $this->export_fields[$v] = true;
-					$exList[$i][$v] = $user['user'][$k];
-				}
-			}			
-			foreach($user['meta'] as $k=>$v){
-				if(in_array($k,$this->user_meta) || in_array($k,$this->wpec_meta)){
-					if(!isset($this->export_fields['meta_'.$k])) $this->export_fields['meta_'.$k] = true;
-					$exList[$i]['meta_'.$k] = $v;
+		$i      = 0;
+		foreach ( $users as $user ) {
+			foreach ( $this->user_fields as $k => $v ) {
+				if ( $this->isGood( $user['user'][ $k ] ) ) {
+					if ( ! isset( $this->export_fields[ $v ] ) ) {
+						$this->export_fields[ $v ] = true;
+					}
+					$exList[ $i ][ $v ] = $user['user'][ $k ];
 				}
 			}
-			$i++;
+			foreach ( $user['meta'] as $k => $v ) {
+				if ( in_array( $k, $this->user_meta ) || in_array( $k, $this->wpec_meta ) ) {
+					if ( ! isset( $this->export_fields[ 'meta_' . $k ] ) ) {
+						$this->export_fields[ 'meta_' . $k ] = true;
+					}
+					$exList[ $i ][ 'meta_' . $k ] = $v;
+				}
+			}
+			$i ++;
 		}
-		foreach($exList as $id=>$entry){
-			foreach($this->export_fields as $field=>$set){
-				if(!isset($entry[$field])){
-					$exList[$id][$field] = '';
+		foreach ( $exList as $id => $entry ) {
+			foreach ( $this->export_fields as $field => $set ) {
+				if ( ! isset( $entry[ $field ] ) ) {
+					$exList[ $id ][ $field ] = '';
 				}
 			}
 		}
-				
-		$this->logger->debug("WPEC_Users::exportUsers".print_r($exList,true));
+
+		$this->logger->debug( "WPEC_Users::exportUsers" . print_r( $exList, true ) );
+
 		return $exList;
 	}
-	
 
 	/**
 	 * getUsers([$options = false])
@@ -200,36 +264,74 @@ class WPEC_Users extends WPEC_ecommerce_feeder{
 	 * very useful for exporting users list.
 	 *
 	 * @param mixed $options to filter and set orderby for the returned list.  Use this if you only want certain users
+	 *
 	 * @return mixed array of users
 	 */
-	function getUsers($options = false){
+	function getUsers( $options = false ) {
+
 		global $wpdb;
-		if(!$options){
+		if ( ! $options ) {
 			$filter = $orderby = '';
-		}else{
-			extract($options);
+		} else {
+			extract( $options );
 		}
-		
-		$users_sql = "SELECT * FROM ". $wpdb->users .$filter.$orderby;
-		$users = $wpdb->get_results($users_sql,ARRAY_A);
-		foreach($users as $user){
-			$user_meta_sql = "SELECT * FROM ".$wpdb->usermeta." WHERE user_id='".$user['ID']."'";
-			$this->users[$user['ID']]['user'] = $user;
-			$meta = $wpdb->get_results($user_meta_sql,ARRAY_A);
-			foreach($meta as $m){
-				if($m['meta_key'] == 'wpshpcrt_usr_profile'){
-					$wpshpcrt_data = unserialize($m['meta_value']);
-					foreach($this->wpec_meta as $k=>$v){
-						if($v == 'shippingcountry' || $v == 'billingcountry') $wpshpcrt_data[$k] = $wpshpcrt_data[$k][0];
-						$this->users[$user['ID']]['meta'][$v] = stripslashes($wpshpcrt_data[$k]);
+
+		$users_sql = "SELECT * FROM " . $wpdb->users . $filter . $orderby;
+		$users     = $wpdb->get_results( $users_sql, ARRAY_A );
+		foreach ( $users as $user ) {
+			$user_meta_sql                      = "SELECT * FROM " . $wpdb->usermeta . " WHERE user_id='" . $user['ID'] . "'";
+			$this->users[ $user['ID'] ]['user'] = $user;
+			$meta                               = $wpdb->get_results( $user_meta_sql, ARRAY_A );
+			foreach ( $meta as $m ) {
+				if ( $m['meta_key'] == 'wpshpcrt_usr_profile' ) {
+					$wpshpcrt_data = unserialize( $m['meta_value'] );
+					foreach ( $this->wpec_meta as $k => $v ) {
+						if ( $v == 'shippingcountry' || $v == 'billingcountry' ) {
+							$wpshpcrt_data[ $k ] = $wpshpcrt_data[ $k ][0];
+						}
+						$this->users[ $user['ID'] ]['meta'][ $v ] = stripslashes( $wpshpcrt_data[ $k ] );
 					}
-				}elseif(in_array($m['meta_key'],$this->user_meta)){
-					$this->users[$user['ID']]['meta'][$m['meta_key']] = stripslashes($m['meta_value']);	
+				} elseif ( in_array( $m['meta_key'], $this->user_meta ) ) {
+					$this->users[ $user['ID'] ]['meta'][ $m['meta_key'] ] = stripslashes( $m['meta_value'] );
 				}
 			}
 		}
-		$this->logger->debug("WPEC_Users::getUsers found:".print_r($this->users,true));
-		return($this->users);
+		$this->logger->debug( "WPEC_Users::getUsers found:" . print_r( $this->users, true ) );
+
+		return ( $this->users );
+	}
+
+	function getCountryData( $country, $state = null ) {
+
+		global $wpdb;
+
+		$country = trim( $country );
+		$state   = trim( $state );
+
+		if ( empty( $state ) ) {
+			$state = 'NJ';
+		}
+
+		$country_sql    = "SELECT * FROM `wp_wpsc_currency_list` WHERE `wp_wpsc_currency_list`.`isocode` = '" . $country . "'";
+		$country_record = $wpdb->get_row( $country_sql, ARRAY_A );
+
+		if ( ! empty( $country_record ) ) {
+
+			$state_sql    = "SELECT * FROM `wp_wpsc_region_tax` WHERE `wp_wpsc_region_tax`.`country_id` = '" . $country_record['id'] . "' AND `wp_wpsc_region_tax`.`code` = '" . $state . "'";
+			$state_record = $wpdb->get_row( $state_sql, ARRAY_A );
+
+		}
+
+		$return = array( $country );
+
+		if ( ! empty( $state_record ) ) {
+
+			$return[] = $state_record['id'];
+
+		}
+
+		return $return;
+
 	}
 
 	/**
@@ -242,15 +344,20 @@ class WPEC_Users extends WPEC_ecommerce_feeder{
 	 * WPEC_Users::getIdByAttribute('email','bob@foo.com');
 	 * </code>
 	 *
-	 * @param string $query like the actual email address
-	 * @param string $attribute to use in search, 
+	 * @param string $query     like the actual email address
+	 * @param string $attribute to use in search,
+	 *
 	 * @return int the user id we looked for for false on no results
 	 */
-	function getIdByAttribute($query='', $attribute='user_email'){
-		$user_lookup_sql = "SELECT id from ".$wpdb->users." WHERE {$attribute}='{$query}'";
-		$user_id = get_var($user_lookup_sql);
-		if(empty($user_id) || $user_id<1) return false;
-		else return (int)$user_id;
+	function getIdByAttribute( $query = '', $attribute = 'user_email' ) {
+
+		$user_lookup_sql = "SELECT id from " . $wpdb->users . " WHERE {$attribute}='{$query}'";
+		$user_id         = get_var( $user_lookup_sql );
+		if ( empty( $user_id ) || $user_id < 1 ) {
+			return false;
+		} else {
+			return (int) $user_id;
+		}
 	}
 
 	/**
@@ -258,34 +365,54 @@ class WPEC_Users extends WPEC_ecommerce_feeder{
 	 *
 	 * Very generic function to save a properly formatted user array back to the users table
 	 * used in conjunction with our export functions that would save it in a usable format.
-	 * 
+	 *
 	 * TODO: make sure that when saving records we make sure it doesn't collide with an exsisting user record
+	 *
 	 * @param mixed $user to save
+	 *
 	 * @return boolean
 	 */
-	function saveUser($user){
-		if(!isset($user['user']) && !is_array($user['user'])) return false;
+	function saveUser( $user ) {
+
+		if ( ! isset( $user['user'] ) && ! is_array( $user['user'] ) ) {
+			return false;
+		}
 
 		//Check to make sure the user doesn't already exsits.  Use email as reference
-		if(!isset($user['user']['user_email'])) return false;
-		$user_id = getIdByAttribute($user['user']['user_email'],'user_email');
-		$user['id'] = $user_id;
-		return $this->save($user);
-	}
-
-	function setCheckoutArray(){
-		global $wpdb;
-		$sql = "SELECT id, unique_name FROM ".WPSC_TABLE_CHECKOUT_FORMS;
-		$fields = $wpdb->get_results($sql,ARRAY_A);
-		foreach($fields as $field){
-			$this->wpec_meta[$field['id']] = $field['unique_name'];
+		if ( ! isset( $user['user']['user_email'] ) ) {
+			return false;
 		}
+		$user_id    = getIdByAttribute( $user['user']['user_email'], 'user_email' );
+		$user['id'] = $user_id;
+
+		return $this->save( $user );
 	}
 
+	function setCheckoutArray() {
 
-	function setEncryptedPassword($user_id, $sec_password){
+		global $wpdb;
+		$sql    = "SELECT * FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `type` != 'heading' AND `active` = 1 ORDER BY `checkout_order` DESC";
+		$fields = $wpdb->get_results( $sql, ARRAY_A );
+		foreach ( $fields as $field ) {
+			$this->wpec_meta[ $field['unique_name'] ] = array(
+				'id'      => $field['id'],
+				'type'    => $field['type'],
+				'options' => ! empty( $field['options'] )
+					? unserialize( $field['options'] )
+					: false
+			);
+		}
+
+	}
+
+	function setEncryptedPassword( $user_id, $sec_password ) {
+
 		global $wpdb;
 
-		$wpdb->update($wpdb->users,array('user_pass'=>$sec_password), array('ID'=>$user_id), array('%s'), array('%d'));
+		$wpdb->update( $wpdb->users,
+			array( 'user_pass' => $sec_password ),
+			array( 'ID' => $user_id ),
+			array( '%s' ),
+			array( '%d' ) );
 	}
 }
